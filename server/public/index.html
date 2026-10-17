@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F4F5FC" />
+<meta name="description" content="Habit Tracker: rutin harian, jadwal, to do, Eisenhower Matrix, Pomodoro, dan statistik." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%235A4FE0'/%3E%3Cpath d='M9 17l4.5 4.5L23 11' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<title>Habit Tracker</title>
+<style>
+  :root{
+    --bg:#F4F5FC; --surface:#FFFFFF; --surface-2:#F1F2FB; --line:#E2E4F1;
+    --txt:#191A2E; --dim:#575B76; --primary:#5A4FE0; --primary-c:#E4E0FF;
+    --secondary:#00A88E; --tertiary:#F1745B;
+    --grad:linear-gradient(120deg,#5A4FE0 0%,#7B4DFF 55%,#F1745B 100%);
+    --shadow:0 10px 30px rgba(30,26,90,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#12121F; --surface:#1B1B2B; --surface-2:#26263A; --line:#33344A;
+      --txt:#E6E5F2; --dim:#B8BAD0; --primary:#BDB6FF; --primary-c:#4237B8;
+      --secondary:#5FDCC2; --tertiary:#FFB4A0;
+      --grad:linear-gradient(120deg,#4237B8 0%,#6C5CE7 55%,#C9503A 100%);
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--txt);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  h1,h2,h3,p{margin:0}
+  button{font:inherit;cursor:pointer;color:inherit}
+  input,select{font:inherit;color:var(--txt)}
+
+  /* ---------- shell ---------- */
+  .shell{display:flex;min-height:100vh}
+  .rail{display:none}
+  .content{flex:1;min-width:0}
+  .stage{max-width:1040px;margin:0 auto;padding:18px 16px 108px}
+  .topbar{display:flex;align-items:center;gap:12px;padding:14px 16px 4px;max-width:1040px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .brand .logo{width:34px;height:34px;border-radius:11px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff}
+  .spacer{flex:1}
+  .conn{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--dim)}
+  .conn .dot{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+  .conn.online .dot{background:var(--secondary)} .conn.offline .dot{background:#FF7A7A} .conn.connecting .dot{background:#FFC24B}
+
+  /* ---------- bottom nav / rail ---------- */
+  .bottom{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:2px;padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+    background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);overflow-x:auto}
+  .bottom button{flex:1 0 auto;min-width:44px;border:0;background:transparent;border-radius:14px;padding:7px 3px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--dim);font-size:9.5px;font-weight:600;white-space:nowrap}
+  .bottom button .ic{font-size:17px;line-height:1}
+  .bottom button.on{color:var(--primary);background:var(--primary-c)}
+  /* ---------- YUBE-style sidebar ---------- */
+  .rail .rbrand{display:flex;align-items:center;gap:10px;padding:2px 4px 10px;font-weight:800;font-size:17px;letter-spacing:-.02em}
+  .rail .rlogo{width:38px;height:38px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:19px;flex:0 0 auto}
+  .rail .rfield{margin:2px 0 6px}
+  .rail .rlbl{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--dim);margin:0 0 6px 3px}
+  .rail .rinput{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px}
+  .rail .rgroup{font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--dim);margin:16px 0 4px;padding:0 4px}
+  .rail .rnav{display:flex;align-items:center;gap:11px;width:100%;border:0;background:transparent;border-radius:14px;padding:8px 10px;color:var(--txt);font-size:14px;font-weight:600;text-align:left}
+  .rail .rnav:hover{background:var(--surface-2)}
+  .rail .rnav.on{background:var(--primary-c);color:var(--primary)}
+  .rail .ric{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto;background:var(--surface-2)}
+  .rail .rtxt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rail .rbadge{background:var(--surface-2);color:var(--dim);font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;flex:0 0 auto}
+  .rail .rnav.on .rbadge{background:var(--primary);color:#fff}
+  .rail .rspacer{flex:1}
+  .rail .rdate{display:flex;align-items:center;gap:12px;margin-top:14px;border-radius:18px;padding:12px 14px;color:#fff;background:linear-gradient(135deg,#00A88E 0%,#12C6A4 100%)}
+  .rail .rdate .rdn{font-size:26px;font-weight:800;line-height:1}
+  .rail .rdate .rdl{font-size:12px;font-weight:600;opacity:.95;text-transform:capitalize}
+  @media (min-width:820px){
+    .topbar .brand{display:none}
+    .topbar{padding-top:8px}
+    .rail{display:flex;flex-direction:column;width:256px;flex:0 0 256px;padding:18px 14px;background:var(--surface);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;overflow-y:auto}
+    .bottom{display:none}
+    .stage{padding-bottom:40px}
+  }
+
+  /* ---------- cards ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
+  .section{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--dim);margin:20px 2px 10px}
+  .section .bullet{width:8px;height:8px;border-radius:50%;background:var(--primary)}
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .row{display:flex;align-items:center;gap:10px}
+  .grow{flex:1;min-width:0}
+
+  /* hero */
+  .hero{background:var(--grad);border-radius:28px;padding:20px;color:#fff;display:flex;gap:14px;align-items:center;box-shadow:var(--shadow)}
+  .hero .hello{font-size:13px;opacity:.85;font-weight:600}
+  .hero .date{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+  .hero .pill{margin-top:12px;display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.2);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:600}
+  .hero .pill .dot{width:7px;height:7px;border-radius:50%;background:#6DF0B6}
+  .hero .pill.connecting .dot{background:#FFD27A}
+  .hero .pill.offline .dot{background:#FF9E9E}
+  .ring{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .ring .ring-in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800}
+
+  /* grid of habit cards */
+  .cards{display:grid;grid-template-columns:1fr;gap:12px}
+  @media (min-width:760px){ .cards{grid-template-columns:1fr 1fr} }
+
+  .hcard{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--shadow)}
+  .hcard .bar{position:absolute;left:0;top:0;bottom:0;width:5px}
+  .tile{width:46px;height:46px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;flex:0 0 auto}
+  .hname{font-weight:700;font-size:16px;letter-spacing:-.01em}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  .tag{font-size:11px;font-weight:600;padding:4px 9px;border-radius:9px}
+  .track{height:7px;border-radius:999px;overflow:hidden;margin-top:11px}
+  .track > i{display:block;height:100%;border-radius:999px}
+  .timer{margin-top:12px;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .timerclock{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+  .timer .timerctl{display:flex;gap:8px;margin-left:auto}
+  .timer .timerctl .btn{padding:8px 14px}
+  .timer .timerhint{font-size:12px;font-weight:600;color:var(--dim);margin-left:auto}
+  .menu{margin-left:2px;border:0;background:transparent;color:var(--dim);font-size:20px;border-radius:10px;padding:2px 8px}
+  .menu:hover{background:var(--surface-2)}
+  .ringbtn{border:0;background:transparent;padding:0;cursor:pointer}
+
+  /* stats */
+  .statgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (min-width:760px){ .statgrid{grid-template-columns:repeat(4,1fr)} }
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:var(--shadow);border-left:5px solid var(--primary)}
+  .stat .k{font-size:11px;color:var(--dim);font-weight:600}
+  .stat .v{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:-.02em}
+
+  /* calendar */
+  .cal-layout{display:grid;grid-template-columns:1fr;gap:14px}
+  @media (min-width:1000px){ .cal-layout{grid-template-columns:1.05fr .95fr;align-items:start} }
+  .wd{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;font-weight:700;margin:8px 0 4px}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;border-radius:12px;cursor:pointer}
+  .cell .n{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+  .cell.today .n{border:1.5px solid var(--primary);color:var(--primary)}
+  .cell.sel .n{background:var(--primary);color:#fff;font-weight:700}
+  .cell.out .n{color:color-mix(in srgb,var(--dim) 50%,transparent)}
+  .cell .bdot{width:6px;height:6px;border-radius:50%}
+  .legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);margin-top:10px}
+  .legend i{width:12px;height:12px;border-radius:4px;display:inline-block}
+
+  .week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+  .week .lbl{font-size:11px;color:var(--dim);margin-top:6px}
+  .bars{display:flex;gap:8px;align-items:flex-end;height:84px;margin-top:14px}
+  .bars .col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
+  .bars .col .sp{flex:1;display:flex;align-items:flex-end;width:100%}
+  .bars .col .b{width:100%;border-radius:9px}
+  .bars .col .bl{font-size:10px;color:var(--dim);margin-top:6px}
+
+  /* heatmap */
+  .heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:3px}
+  .heat i{aspect-ratio:1;border-radius:4px;background:var(--surface-2)}
+
+  /* inputs / buttons */
+  .field{display:flex;flex-direction:column;gap:4px}
+  label.lbl{font-size:11px;color:var(--dim);font-weight:600}
+  input,select{background:var(--surface-2);border:1px solid var(--line);border-radius:13px;padding:10px 12px;width:100%}
+  .btn{border:1px solid var(--line);background:var(--surface-2);border-radius:13px;padding:10px 14px;font-weight:600;color:var(--txt);text-decoration:none}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--dim)}
+  .chip.on{color:var(--primary)}
+
+  .fab{position:fixed;right:18px;bottom:84px;z-index:45;width:58px;height:58px;border-radius:19px;border:0;background:var(--primary);color:#fff;font-size:28px;font-weight:700;box-shadow:0 12px 26px rgba(90,79,224,.45)}
+  @media (min-width:600px){ .fab{bottom:26px;right:26px} }
+  .fab.hidden{display:none}
+
+  .empty{text-align:center;color:var(--dim);padding:34px 10px;font-size:14px}
+
+  /* ---------- task / planner ---------- */
+  .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .toolbar .spacer{flex:1;min-width:8px}
+  .addrow{display:grid;grid-template-columns:1fr auto auto auto;gap:8px}
+  @media (max-width:560px){ .addrow{grid-template-columns:1fr 1fr;grid-auto-rows:auto} .addrow .awide{grid-column:1/-1} }
+  .progressline{font-size:13px;color:var(--dim);font-weight:600}
+  .progressline b{color:var(--txt)}
+  .bar2{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}
+  .bar2 > i{display:block;height:100%;border-radius:999px;background:var(--primary)}
+  .agenda{display:flex;flex-direction:column;gap:10px}
+  .ag{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+  .ag .tm{font-weight:800;font-size:13px;min-width:52px;color:var(--primary);font-variant-numeric:tabular-nums}
+  .ag .dur{font-size:11px;color:var(--dim);font-weight:600}
+  .ag .t{flex:1;min-width:0;font-weight:700}
+  .ag .t small{display:block;font-weight:500;color:var(--dim);font-size:11px;margin-top:2px}
+  .ag .pdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .ag.done .t{text-decoration:line-through;color:var(--dim)}
+  .cbx{width:26px;height:26px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface-2);flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent}
+  .cbx.on{background:var(--secondary);border-color:var(--secondary);color:#fff}
+  .iconbtn{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:5px 9px;color:var(--dim);font-size:14px}
+  .tipcard{background:var(--primary-c);border:1px solid var(--line);border-radius:16px;padding:12px 14px;font-size:13px;color:var(--txt);line-height:1.5}
+
+  .tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .tbl th{text-align:left;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:0}
+  .tbl .tt{font-weight:700}
+  .tbl .sub{font-size:11px;color:var(--dim);margin-top:2px}
+  .tbl .num{font-variant-numeric:tabular-nums}
+  .pill2{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px}
+  .rowacts{display:flex;gap:6px;justify-content:flex-end}
+  .tscroll{overflow-x:auto}
+  .filters{display:flex;flex-wrap:wrap;gap:7px}
+  .filters .chip{white-space:nowrap}
+
+  .quadgrid{display:grid;grid-template-columns:1fr;gap:14px}
+  @media (min-width:860px){ .quadgrid{grid-template-columns:1fr 1fr} }
+  .quad{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:180px}
+  .quad .qhead{display:flex;align-items:center;gap:10px}
+  .quad .qno{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex:0 0 auto}
+  .quad .qtitle{font-weight:800;font-size:15px}
+  .quad .qsub{font-size:12px;color:var(--dim)}
+  .quad .qadd{margin-left:auto;border:1px dashed var(--line);background:transparent;border-radius:10px;padding:6px 11px;font-size:12px;font-weight:700;color:var(--dim)}
+  .quad .qbody{margin-top:12px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .quad .qempty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:13px;padding:22px 6px;text-align:center}
+  .qcard{border:1px solid var(--line);border-radius:12px;padding:10px 11px;display:flex;align-items:flex-start;gap:9px;background:var(--surface-2)}
+  .qcard .qt{font-weight:700;font-size:13px}
+  .qcard .qm{font-size:11px;color:var(--dim);margin-top:2px}
+  .qcard.done .qt{text-decoration:line-through;color:var(--dim)}
+  .qcard .qgrow{flex:1;min-width:0}
+
+  /* modal */
+  .scrim{position:fixed;inset:0;z-index:60;background:rgba(12,10,40,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+  .modal{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:26px;padding:20px}
+  .modal h2{font-size:19px;font-weight:800;margin-bottom:14px}
+  .modal .stack{gap:12px}
+  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="rbrand"><span class="rlogo">✓</span>Habit Tracker</div>
+    <div class="rfield">
+      <label class="rlbl" for="userName">Nama Kamu</label>
+      <input id="userName" class="rinput" placeholder="Tulis nama kamu...">
+    </div>
+    <div class="rgroup">Rencanakan</div>
+    <button class="rnav" data-tab="schedule"><span class="ric" style="background:#FFE9DA;color:#E5673F">🗓️</span><span class="rtxt">Jadwal Harian</span><span class="rbadge" id="railDay"></span></button>
+    <button class="rnav on" data-tab="today"><span class="ric" style="background:#E4E0FF;color:#5A4FE0">🔁</span><span class="rtxt">Rutin</span></button>
+    <button class="rnav" data-tab="todo"><span class="ric" style="background:#D5F3EA;color:#00A88E">✅</span><span class="rtxt">To Do List</span></button>
+    <button class="rnav" data-tab="calendar"><span class="ric" style="background:#DCEBFF;color:#0C82E0">📅</span><span class="rtxt">Kalender</span></button>
+    <div class="rgroup">Kerjakan</div>
+    <button class="rnav" data-tab="matrix"><span class="ric" style="background:#FFDED8;color:#E24A3F">🎯</span><span class="rtxt">Eisenhower Matrix</span></button>
+    <button class="rnav" data-tab="pomodoro"><span class="ric" style="background:#FFE0E0;color:#E24A3F">🍅</span><span class="rtxt">Pomodoro</span></button>
+    <div class="rgroup">Lainnya</div>
+    <button class="rnav" data-tab="stats"><span class="ric" style="background:#FFF0CE;color:#C98A00">⭐</span><span class="rtxt">Statistik</span></button>
+    <button class="rnav" data-tab="settings"><span class="ric">⚙️</span><span class="rtxt">Pengaturan</span></button>
+    <div class="rspacer"></div>
+    <div class="rdate" id="railDate"></div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div class="brand"><span class="logo">✓</span>Habit Tracker</div>
+      <span class="spacer"></span>
+      <span id="conn" class="conn connecting"><span class="dot"></span><span id="connText">Menyambung...</span></span>
+    </div>
+    <div class="stage" id="stage"></div>
+  </div>
+</div>
+
+<nav class="bottom" id="bottomNav">
+  <button data-tab="today" class="on"><span class="ic">🏠</span>Hari Ini</button>
+  <button data-tab="schedule"><span class="ic">🗓️</span>Jadwal</button>
+  <button data-tab="todo"><span class="ic">✅</span>To Do</button>
+  <button data-tab="matrix"><span class="ic">🎯</span>Matrix</button>
+  <button data-tab="calendar"><span class="ic">📅</span>Kalender</button>
+  <button data-tab="stats"><span class="ic">⭐</span>Statistik</button>
+  <button data-tab="pomodoro"><span class="ic">🍅</span>Pomodoro</button>
+  <button data-tab="settings"><span class="ic">⚙️</span>Atur</button>
+</nav>
+
+<button class="fab" id="fab" title="Tambah habit">+</button>
+<div id="modalRoot"></div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const DAY_NAMES=["Sen","Sel","Rab","Kam","Jum","Sab","Min"];
+const DAY_INIT=["S","S","R","K","J","S","M"];
+const MONTHS=["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+const PALETTE=["#6C5CE7","#00A88E","#0C82E0","#E5673F","#E24A93","#12A5A5","#C98A00","#7B4DFF"];
+const HEAT=["#00A88E","#0C82E0","#6C5CE7","#9B4DE0","#E24A93"];
+
+const clamp=(v)=>Math.max(0,Math.min(1,v));
+const esc=(s)=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const key=(d)=>d.toLocaleDateString("sv-SE");
+const iso=(d)=>d.getDay()===0?7:d.getDay();
+const uuid=()=>crypto.randomUUID?crypto.randomUUID():"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return (c==="x"?r:(r&3|8)).toString(16);});
+function hexA(hex,a){const h=hex.replace("#","");const n=parseInt(h.length===3?h.split("").map(c=>c+c).join(""):h,16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+function habitColor(keyStr){if(!keyStr)return PALETTE[0];let h=0;for(const c of keyStr)h=(h*31+c.charCodeAt(0))|0;return PALETTE[((h%PALETTE.length)+PALETTE.length)%PALETTE.length];}
+function heatColor(r){return HEAT[Math.min(HEAT.length-1,Math.floor(clamp(r)*HEAT.length))];}
+function progressColor(r){const t=clamp(r);return hexMix(HEAT[0],HEAT[2],t);}
+function hexMix(a,b,t){const pa=parseInt(a.slice(1),16),pb=parseInt(b.slice(1),16);const ar=(pa>>16)&255,ag=(pa>>8)&255,ab=pa&255,br=(pb>>16)&255,bg=(pb>>8)&255,bb=pb&255;const r=Math.round(ar+(br-ar)*t),g=Math.round(ag+(bg-ag)*t),bl=Math.round(ab+(bb-ab)*t);return `rgb(${r},${g},${bl})`;}
+function ring(p,size,stroke,color,center){const r=(size-stroke)/2,c=2*Math.PI*r;return `<span class="ring" style="width:${size}px;height:${size}px"><svg width="${size}" height="${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${hexA(color,.18)}" stroke-width="${stroke}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-clamp(p))}" transform="rotate(-90 ${size/2} ${size/2})"/></svg><span class="ring-in">${center||""}</span></span>`;}
+
+/* ---------------- state ---------------- */
+const habits=new Map(), checkins=new Map(), tasks=new Map();
+const demoUser=new URLSearchParams(location.search).get("u");
+let ws=null, reqId=0, token=demoUser||localStorage.getItem("habit_token")||"";
+let tab="today";
+let today=new Date(); today.setHours(0,0,0,0);
+let month=new Date(today.getFullYear(),today.getMonth(),1);
+let selected=new Date(today);
+let planDay=new Date(today);
+let todoFilter="all", todoSort="default";
+
+/* ---------------- data helpers ---------------- */
+const activeHabits=()=>[...habits.values()].filter(h=>!h.archived);
+const archivedHabits=()=>[...habits.values()].filter(h=>h.archived);
+const checkinOf=(h,date)=>checkins.get(h.id+":"+date);
+const dayList=(s)=>String(s??"").split(",").map(x=>parseInt(x,10)).filter(n=>n>=1&&n<=7);
+function isScheduled(h,d){const days=dayList(h.scheduleDays);if(!days.length)return true;return days.includes(iso(d));}
+function countsInDayRatio(h){return !(h.scheduleType==="weekly"&&dayList(h.scheduleDays).length===0);}
+function isComplete(h,c){if(!c)return false;if(h.targetType==="numeric")return c.value>=Math.max(1,h.targetValue);if(h.targetType==="timer")return c.duration>=Math.max(1,h.targetValue);return c.value>=1;}
+function progressOf(h,c){if(h.targetType==="numeric")return h.targetValue<=0?0:clamp((c?c.value:0)/h.targetValue);if(h.targetType==="timer")return h.targetValue<=0?0:clamp((c?c.duration:0)/h.targetValue);return isComplete(h,c)?1:0;}
+function dayRatio(d){const due=activeHabits().filter(h=>countsInDayRatio(h)&&isScheduled(h,d));if(!due.length)return null;return due.filter(h=>isComplete(h,checkinOf(h,key(d)))).length/due.length;}
+function weekStart(d){const s=new Date(d);s.setDate(d.getDate()-(iso(d)-1));s.setHours(0,0,0,0);return s;}
+function weekRatio(start){let due=0,done=0;for(let i=0;i<7;i++){const d=new Date(start);d.setDate(start.getDate()+i);for(const h of activeHabits()){if(!countsInDayRatio(h)||!isScheduled(h,d))continue;due++;if(isComplete(h,checkinOf(h,key(d))))done++;}}return due?done/due:0;}
+function monthGrid(y,m){const first=new Date(y,m,1),start=new Date(first);start.setDate(first.getDate()-(iso(first)-1));const last=new Date(y,m+1,0),end=new Date(last);end.setDate(last.getDate()+(7-iso(last)));const out=[];for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1))out.push(new Date(d));return out;}
+function dailyStreak(h){const set=new Set([...checkins.values()].filter(c=>c.habitId===h.id&&isComplete(h,c)).map(c=>c.date));let longest=0,run=0;const comps=[...set].sort();if(!comps.length)return{cur:0,longest:0};for(let d=new Date(comps[0]);d<=today;d.setDate(d.getDate()+1)){if(!isScheduled(h,d))continue;if(set.has(key(d))){run++;longest=Math.max(longest,run);}else if(key(d)!==key(today)){run=0;}}return{cur:run,longest};}
+function scheduleLabel(h){const days=dayList(h.scheduleDays).sort((a,b)=>a-b);if(h.scheduleType==="weekly"){const n=h.timesPerWeek||days.length||0;if(!days.length)return `${n}x/minggu`;return `${n}x/minggu · ${days.map(x=>DAY_NAMES[x-1]).join(", ")}`;}if(h.scheduleType==="weekdays"){const names=days.map(n=>DAY_NAMES[n-1]);return names.length?names.join(", "):"Setiap hari";}return "Harian";}
+function listFor(d){return activeHabits().filter(h=>isScheduled(h,d)).sort((a,b)=>a.name.localeCompare(b.name));}
+function userName(){return (localStorage.getItem("habit_name")||"").trim();}
+function greeting(){const h=new Date().getHours();const base=h<11?"Selamat pagi":h<15?"Selamat siang":h<19?"Selamat sore":"Selamat malam";const n=userName();return n?`${base}, ${n}`:base;}
+
+/* ---------------- task helpers ---------------- */
+const PRIO={low:{label:"Low",color:"#12A5A5"},medium:{label:"Medium",color:"#C98A00"},urgent:{label:"Urgent",color:"#E24A3F"}};
+const prioMeta=(p)=>PRIO[p]||PRIO.low;
+const taskList=()=>[...tasks.values()].filter(t=>!t.deleted);
+const tasksOn=(k)=>taskList().filter(t=>t.date===k).sort((a,b)=>(a.time||"99").localeCompare(b.time||"99")||a.title.localeCompare(b.title));
+function taskOverdue(t){if(t.done||!t.date)return false;const end=new Date(t.date+"T"+(t.time||"23:59")).getTime();return end<Date.now();}
+function taskDueLabel(t){
+  if(!t.date)return "-";
+  const d=new Date(t.date+"T00:00:00");const dd=key(d);
+  const t0=new Date(today);const diff=Math.round((d-t0)/86400000);
+  const rel=dd===key(today)?"Hari ini":(diff===1?"Besok":(diff===-1?"Kemarin":d.toLocaleDateString("id-ID",{day:"numeric",month:"short"})));
+  return rel;
+}
+function taskLeft(t){
+  if(!t.date)return "-";
+  const end=new Date(t.date+"T"+(t.time||"23:59")).getTime()-Date.now();
+  if(t.done)return "selesai";
+  const m=Math.round(Math.abs(end)/60000);
+  if(m<60)return (end<0?"+":"")+m+"m";
+  const h=Math.floor(m/60),d=Math.floor(h/24);
+  if(d>=1)return (end<0?"+":"")+d+"h";
+  return (end<0?"+":"")+h+"j";
+}
+const prioRank={urgent:0,medium:1,low:2};
+function quadrantOf(t){const imp=!!t.important,urg=!!t.urgent;if(imp&&urg)return 1;if(imp&&!urg)return 2;if(!imp&&urg)return 3;return 4;}
+function sortTasks(list){
+  const l=[...list];
+  if(todoSort==="deadline")l.sort((a,b)=>((a.date||"9999")+(a.time||"99")).localeCompare((b.date||"9999")+(b.time||"99")));
+  else if(todoSort==="priority")l.sort((a,b)=>prioRank[a.priority]-prioRank[b.priority]);
+  else if(todoSort==="title")l.sort((a,b)=>a.title.localeCompare(b.title));
+  else l.sort((a,b)=>(Number(a.done)-Number(b.done))||((a.date||"9999").localeCompare(b.date||"9999")));
+  return l;
+}
+function inMonth(t){if(!t.date)return false;const d=new Date(t.date+"T00:00:00");return d.getFullYear()===today.getFullYear()&&d.getMonth()===today.getMonth();}
+function filteredTasks(){
+  let l=taskList();
+  if(todoFilter==="active")l=l.filter(t=>!t.done);
+  else if(todoFilter==="done")l=l.filter(t=>t.done);
+  else if(todoFilter==="urgent")l=l.filter(t=>t.priority==="urgent"||t.urgent);
+  else if(todoFilter==="overdue")l=l.filter(taskOverdue);
+  else if(todoFilter==="month")l=l.filter(inMonth);
+  return sortTasks(l);
+}
+
+/* ---------------- connection ---------------- */
+let reconnectTimer=null, reconnectDelay=1000;
+function setConn(state,t){const el=$("#conn");el.className="conn "+state;$("#connText").textContent=t;}
+function send(type,data){if(!ws||ws.readyState!==1)return;const id=String(++reqId);ws.send(JSON.stringify({type,id,data:data||{}}));}
+function scheduleReconnect(){
+  clearTimeout(reconnectTimer);
+  reconnectTimer=setTimeout(()=>{reconnectDelay=Math.min(15000,Math.round(reconnectDelay*1.7));connect();},reconnectDelay);
+}
+function connect(){
+  clearTimeout(reconnectTimer);
+  const url=(location.protocol==="https:"?"wss://":"ws://")+location.host;
+  if(ws){try{ws.onclose=null;ws.close();}catch(e){}}
+  setConn("connecting","Menyambung...");
+  ws=new WebSocket(url);
+  ws.onopen=()=>{ reconnectDelay=1000; if(token) send("auth",{token,deviceId:localStorage.getItem("habit_device")||uuid(),deviceName:"web"}); else send("auth.register",{deviceName:"web"}); };
+  ws.onmessage=(ev)=>{let m;try{m=JSON.parse(ev.data);}catch(e){return;}handle(m);};
+  ws.onclose=()=>{setConn("offline","Offline");scheduleReconnect();};
+  ws.onerror=()=>setConn("offline","Error");
+}
+function handle(m){
+  if(m.type==="auth.ok"){
+    if(m.data.token){token=m.data.token;localStorage.setItem("habit_token",token);}
+    if(m.data.deviceId)localStorage.setItem("habit_device",m.data.deviceId);
+    setConn("online","Tersambung");
+    send("sync.pull",{since:0});
+  } else if(m.type==="sync.state"){
+    applyRows("habit",m.data.habits||[]);applyRows("checkin",m.data.checkins||[]);applyRows("task",m.data.tasks||[]);render();
+  } else if(m.type==="sync.update"||m.type==="sync.ack"){
+    applyRows(m.data.entity,m.data.rows||[]);render();
+  } else if(m.type==="auth.err"){
+    token="";localStorage.removeItem("habit_token");
+    setConn("connecting","Daftar ulang...");
+    try{ws.onclose=null;ws.close();}catch(e){}
+    setTimeout(connect,300);
+  }
+}
+function applyRows(entity,rows){
+  for(const r of rows){
+    if(entity==="habit"){
+      if(r.deleted||r.deleted===1)habits.delete(r.id);
+      else habits.set(r.id,{id:r.id,name:r.name,category:r.category||"",scheduleType:r.schedule_type||"daily",scheduleDays:r.schedule_days||"",timesPerWeek:r.times_per_week||0,targetType:r.target_type||"check",targetValue:r.target_value||0,unit:r.unit||"",archived:!!r.archived});
+    } else if(entity==="checkin"){
+      if(r.deleted||r.deleted===1)checkins.delete(r.id);
+      else checkins.set(r.id,{id:r.id,habitId:r.habit_id,date:r.date,value:r.value,duration:r.duration,note:r.note||""});
+    } else if(entity==="task"){
+      if(r.deleted||r.deleted===1)tasks.delete(r.id);
+      else tasks.set(r.id,{id:r.id,title:r.title,notes:r.notes||"",date:r.date||"",time:r.time||"",duration:r.duration||0,priority:r.priority||"low",important:!!r.important,urgent:!!r.urgent,done:!!r.done});
+    }
+  }
+}
+
+/* ---------------- actions ---------------- */
+function tap(h,d){const k=key(d),c=checkinOf(h,k);
+  if(h.targetType==="numeric")send("checkin.put",{habitId:h.id,date:k,value:(c?c.value:0)+1,note:c?c.note:""});
+  else if(h.targetType==="timer")send("checkin.put",{habitId:h.id,date:k,value:1,duration:(c?c.duration:0)+300,note:c?c.note:""});
+  else if(isComplete(h,c))send("checkin.delete",{id:h.id+":"+k});
+  else send("checkin.put",{habitId:h.id,date:k,value:1,note:c?c.note:""});
+}
+function removeHabit(h){send("habit.delete",{id:h.id});}
+function archiveHabit(h,archived){send("habit.put",{id:h.id,name:h.name,category:h.category,scheduleType:h.scheduleType,scheduleDays:h.scheduleDays,timesPerWeek:h.timesPerWeek,targetType:h.targetType,targetValue:h.targetValue,unit:h.unit,archived});}
+
+/* ---------------- timer ---------------- */
+const timers=new Map();
+let ticker=null;
+function fmtClock(s){s=Math.max(0,Math.ceil(s||0));const m=Math.floor(s/60),ss=s%60;return `${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;}
+function ensureTicker(){if(!ticker)ticker=setInterval(tickTimers,1000);}
+function startTimer(id){
+  const h=habits.get(id);if(!h)return;
+  const total=Math.max(1,Math.round(h.targetValue||0));
+  let st=timers.get(id);
+  if(!st){st={remaining:total,running:false,last:0};timers.set(id,st);}
+  if(st.remaining<=0)st.remaining=total;
+  if(st.running){st.running=false;}
+  else{st.running=true;st.last=Date.now();ensureTicker();}
+  render();
+}
+function resetTimer(id){timers.delete(id);render();}
+function tickTimers(){
+  const nowT=Date.now();let anyRunning=false,changed=false;
+  for(const [id,st] of timers){
+    if(!st.running)continue;
+    anyRunning=true;
+    const dt=(nowT-st.last)/1000;st.last=nowT;
+    st.remaining=Math.max(0,st.remaining-dt);
+    changed=true;
+    if(st.remaining<=0){st.running=false;completeTimer(id);}
+  }
+  if(changed&&(tab==="today"||tab==="calendar"))render();
+  if(!anyRunning){clearInterval(ticker);ticker=null;}
+}
+function completeTimer(id){
+  const h=habits.get(id);if(!h)return;
+  const k=key(today),c=checkinOf(h,k);
+  send("checkin.put",{habitId:id,date:k,value:1,duration:Math.max(1,Math.round(h.targetValue||0)),note:c?c.note:""});
+  timers.delete(id);
+  render();
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  $$("#bottomNav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  $$(".rail button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
+  const rd=$("#railDate"), rday=$("#railDay");
+  if(rd)rd.innerHTML=`<div class="rdn">${today.getDate()}</div><div class="rdl">${today.toLocaleDateString("id-ID",{weekday:"long",month:"long"})}</div>`;
+  if(rday)rday.textContent=String(today.getDate());
+  const planner=["today","schedule","todo","matrix"].includes(tab);
+  $("#fab").classList.toggle("hidden",!planner);
+  if(tab==="today")renderToday();
+  else if(tab==="schedule")renderSchedule();
+  else if(tab==="todo")renderTodo();
+  else if(tab==="matrix")renderMatrix();
+  else if(tab==="calendar")renderCalendar();
+  else if(tab==="stats")renderStats();
+  else if(tab==="pomodoro")renderPomodoro();
+  else renderSettings();
+}
+
+function renderToday(){
+  const list=listFor(today);
+  const done=list.filter(h=>isComplete(h,checkinOf(h,key(today)))).length;
+  const total=list.length;
+  const accent=hexMix("#5A4FE0","#F1745B",0);
+  const cards=list.length?list.map(h=>habitCardHTML(h,today)).join(""):`<div class="empty" style="grid-column:1/-1">Belum ada habit hari ini.<br>Tekan + untuk menambah.</div>`;
+  $("#stage").innerHTML=`
+    <div class="hero">
+      <div class="grow">
+        <div class="hello">${greeting()}</div>
+        <div class="date">${today.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long"})}</div>
+        <span class="pill ${connClass()}"><span class="dot"></span>${connText()}</span>
+      </div>
+      ${ring(total?done/total:0,80,8,"#ffffff",`<span style="font-size:16px">${done}/${total}</span><span style="font-size:10px;opacity:.85">selesai</span>`)}
+    </div>
+    ${total?`<div class="section"><span class="bullet"></span>Habit hari ini</div>`:""}
+    <div class="cards">${cards}</div>`;
+}
+
+function habitCardHTML(h,d){
+  const c=checkinOf(h,key(d)),done=isComplete(h,c),p=progressOf(h,c),accent=habitColor(h.category||h.name);
+  const isTimer=h.targetType==="timer",onToday=key(d)===key(today);
+  const st=timers.get(h.id),running=!!(st&&st.running);
+  const total=Math.max(1,h.targetValue||0);
+  const ringP=(isTimer&&st)?clamp((total-st.remaining)/total):(h.targetType==="check"?(done?1:0):p);
+  const tags=`${h.category?`<span class="tag" style="color:${accent};background:${hexA(accent,.14)}">${esc(h.category)}</span>`:""}`+
+    `<span class="tag" style="color:var(--dim);background:var(--surface-2)">${esc(scheduleLabel(h))}</span>`+
+    (dailyStreak(h).cur>0?`<span class="tag" style="color:var(--tertiary);background:${hexA("#F1745B",.16)}">Streak ${dailyStreak(h).cur}</span>`:"");
+  let center;
+  if(done)center="✓";
+  else if(h.targetType==="numeric")center="+";
+  else if(isTimer)center=running?"⏸":"▶";
+  else center="✓";
+  const label=h.targetType==="numeric"?`${c?c.value:0}/${h.targetValue} ${h.unit}`.trim()
+    :h.targetType==="timer"?`${Math.round((c?c.duration:0)/60)}m/${Math.round(h.targetValue/60)}m`
+    :`Streak ${dailyStreak(h).cur}`;
+  const ringAction=isTimer&&onToday?`startTimer('${h.id}')`:`onTap('${h.id}','${key(d)}')`;
+  let body="";
+  if(isTimer){
+    const remain=st?st.remaining:(h.targetValue||0);
+    const btnLabel=running?"Jeda":((st&&st.remaining<total)?"Lanjut":"Mulai");
+    body=`<div class="timer" style="background:${hexA(accent,.12)}">
+      <div class="timerclock" style="color:${accent}">${fmtClock(remain)}</div>
+      ${onToday
+        ?`<div class="timerctl">
+            <button class="btn ${running?"":"primary"}" onclick="startTimer('${h.id}')">${btnLabel}</button>
+            <button class="btn" onclick="resetTimer('${h.id}')">Reset</button>
+          </div>`
+        :`<div class="timerhint">Target ${Math.round((h.targetValue||0)/60)} menit${done?" · selesai":""}</div>`}
+    </div>`;
+  } else if(h.targetType!=="check"){
+    body=`<div class="track" style="background:${hexA(accent,.16)}"><i style="width:${p*100}%;background:${accent}"></i></div><div style="font-size:12px;font-weight:600;color:${accent};margin-top:6px">${esc(label)}</div>`;
+  }
+  return `<div class="hcard">
+    <div class="bar" style="background:${accent}"></div>
+    <div class="row">
+      <div class="tile" style="background:${hexA(accent,.16)};color:${accent}">${esc(h.name.trim().slice(0,1).toUpperCase())}</div>
+      <div class="grow">
+        <div class="hname">${esc(h.name)}</div>
+        <div class="tags">${tags}</div>
+      </div>
+      <button class="ringbtn" onclick="${ringAction}">${ring(ringP,48,5,accent,`<span style="color:${accent};font-size:15px">${center}</span>`)}</button>
+      <button class="menu" onclick="openEdit('${h.id}')">⋮</button>
+    </div>
+    ${body}
+  </div>`;
+}
+
+/* ---------------- planner: jadwal harian ---------------- */
+function timeOptions(sel){
+  const out=[`<option value="">Jam</option>`];
+  for(let h=5;h<=23;h++){for(const mm of [0,30]){const v=`${String(h).padStart(2,"0")}:${mm?"30":"00"}`;out.push(`<option value="${v}" ${sel===v?"selected":""}>${h}:${mm?"30":"00"}</option>`);}}
+  return out.join("");
+}
+const DUR_OPTS=[[15,"15m"],[25,"25m"],[30,"30m"],[45,"45m"],[60,"1 jam"],[90,"1j 30m"],[120,"2 jam"],[180,"3 jam"]];
+function durOptions(sel){return DUR_OPTS.map(([v,l])=>`<option value="${v}" ${Number(sel)===v?"selected":""}>${l}</option>`).join("");}
+function planDateLabel(d){return d.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});}
+function shiftPlan(n){planDay=new Date(planDay);planDay.setDate(planDay.getDate()+n);render();}
+
+function renderSchedule(){
+  const k=key(planDay);
+  const list=tasksOn(k);
+  const done=list.filter(t=>t.done).length,total=list.length;
+  const isToday=k===key(today);
+  const agenda=list.length?list.map(t=>agItemHTML(t)).join(""):`<div class="empty">Harimu masih kosong.<br>Tambahkan kegiatan di atas, nanti kepadatannya muncul di sini.</div>`;
+  $("#stage").innerHTML=`
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em">Jadwal Harian</h1>
+    <div style="color:var(--dim);font-size:13px;margin:2px 0 14px">Rencanakan kegiatanmu dengan jam & durasi</div>
+    <div class="card stack">
+      <div class="toolbar">
+        <button class="menu" onclick="shiftPlan(-1)">‹</button>
+        <div class="grow" style="font-weight:800;font-size:16px;text-transform:capitalize">${planDateLabel(planDay)}</div>
+        ${isToday?`<span class="tag" style="color:var(--secondary);background:${hexA("#00A88E",.14)}">Hari Ini</span>`:`<button class="btn" onclick="planToday()">Hari ini</button>`}
+        <button class="menu" onclick="shiftPlan(1)">›</button>
+      </div>
+      <div class="row">
+        <span class="progressline"><b>${done}</b> dari <b>${total}</b> kegiatan selesai</span>
+        <span class="spacer"></span>
+        <button class="btn" onclick="copyYesterday()">Salin kemarin</button>
+        <button class="btn" onclick="clearDay('${k}')">Kosongkan</button>
+      </div>
+      <div class="bar2"><i style="width:${total?done/total*100:0}%;background:${progressColor(total?done/total:0)}"></i></div>
+      <div class="addrow">
+        <input id="p-title" class="awide" placeholder="Nama kegiatan..." onkeydown="if(event.key==='Enter')addPlanTask()">
+        <select id="p-time">${timeOptions("08:00")}</select>
+        <select id="p-dur">${durOptions(30)}</select>
+        <button class="btn primary" onclick="addPlanTask()">+ Tambah</button>
+      </div>
+    </div>
+    <div class="section"><span class="bullet"></span>Agenda</div>
+    <div class="agenda">${agenda}</div>`;
+}
+function agItemHTML(t){
+  const pm=prioMeta(t.priority);
+  return `<div class="ag ${t.done?"done":""}">
+    <div class="cbx ${t.done?"on":""}" onclick="taskToggle('${t.id}')">✓</div>
+    <div class="tm">${t.time?esc(t.time):"--:--"}</div>
+    <div class="t">${esc(t.title)}<small>${t.time?(esc(t.time)+" · "):""}${t.duration?t.duration+" mnt":"tanpa durasi"}</small></div>
+    <span class="pdot" style="background:${pm.color}" title="${pm.label}"></span>
+    <button class="iconbtn" onclick="openTask('${t.id}')">✎</button>
+  </div>`;
+}
+function planToday(){planDay=new Date(today);render();}
+function addPlanTask(){
+  const el=$("#p-title");const title=el.value.trim();if(!title)return;
+  send("task.put",{id:uuid(),title,notes:"",date:key(planDay),time:$("#p-time").value,duration:Number($("#p-dur").value)||0,priority:"low"});
+  el.value="";
+}
+function copyYesterday(){
+  const y=new Date(planDay);y.setDate(y.getDate()-1);
+  const src=tasksOn(key(y));
+  if(!src.length)return;
+  for(const t of src)send("task.put",{id:uuid(),title:t.title,notes:t.notes,date:key(planDay),time:t.time,duration:t.duration,priority:t.priority,important:t.important,urgent:t.urgent});
+  render();
+}
+function clearDay(k){for(const t of tasksOn(k))send("task.delete",{id:t.id});}
+
+/* ---------------- planner: to do list ---------------- */
+function renderTodo(){
+  const all=taskList();
+  const done=all.filter(t=>t.done).length;
+  const overdue=all.filter(taskOverdue).length;
+  const notDone=all.length-done;
+  const byPrio=(p)=>all.filter(t=>t.priority===p).length;
+  const filters=[["all","Semua"],["active","Aktif"],["done","Selesai"],["urgent","Urgent"],["overdue","Terlambat"],["month","Bulan Ini"]];
+  const list=filteredTasks();
+  const rows=list.length?list.map(t=>todoRowHTML(t)).join(""):`<tr><td colspan="6"><div class="empty">Belum ada task. Tambah yuk!</div></td></tr>`;
+  $("#stage").innerHTML=`
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em">To Do List</h1>
+    <div style="color:var(--dim);font-size:13px;margin:2px 0 14px">Kelola tugas dan prioritasmu</div>
+    <div class="statgrid">
+      <div class="stat" style="border-left-color:var(--secondary)"><div class="k">Selesai</div><div class="v" style="color:var(--secondary)">${done}</div></div>
+      <div class="stat" style="border-left-color:var(--tertiary)"><div class="k">Belum Selesai</div><div class="v" style="color:var(--tertiary)">${notDone}</div></div>
+      <div class="stat" style="border-left-color:#E24A3F"><div class="k">Terlambat</div><div class="v" style="color:#E24A3F">${overdue}</div></div>
+      <div class="stat" style="border-left-color:var(--primary)"><div class="k">Total Task</div><div class="v" style="color:var(--primary)">${all.length}</div>
+        <div class="tags" style="margin-top:6px">
+          <span class="tag" style="color:${PRIO.urgent.color};background:${hexA(PRIO.urgent.color,.14)}">${byPrio("urgent")} Urgent</span>
+          <span class="tag" style="color:${PRIO.medium.color};background:${hexA(PRIO.medium.color,.14)}">${byPrio("medium")} Medium</span>
+          <span class="tag" style="color:${PRIO.low.color};background:${hexA(PRIO.low.color,.14)}">${byPrio("low")} Low</span>
+        </div>
+      </div>
+    </div>
+    <div class="tipcard" style="margin-top:14px">Tips: semua tugas yang punya tenggat bisa dipakai di Jadwal Harian dan dipetakan otomatis ke Eisenhower Matrix lewat tanda Penting & Mendesak.</div>
+    <div class="card" style="margin-top:14px">
+      <div class="toolbar">
+        <div class="filters">${filters.map(([v,l])=>`<button class="chip ${todoFilter===v?"on":""}" onclick="setTodoFilter('${v}')">${l}</button>`).join("")}</div>
+        <span class="spacer"></span>
+        <select style="width:auto" onchange="setTodoSort(this.value)">
+          <option value="default" ${todoSort==="default"?"selected":""}>Urutan default</option>
+          <option value="deadline" ${todoSort==="deadline"?"selected":""}>Deadline</option>
+          <option value="priority" ${todoSort==="priority"?"selected":""}>Prioritas</option>
+          <option value="title" ${todoSort==="title"?"selected":""}>Judul</option>
+        </select>
+      </div>
+      <div class="tscroll" style="margin-top:12px">
+        <table class="tbl">
+          <thead><tr><th>Aktivitas</th><th>Deadline</th><th>Jam</th><th>Sisa</th><th>Prioritas</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+function todoRowHTML(t){
+  const pm=prioMeta(t.priority),od=taskOverdue(t);
+  const left=taskLeft(t);
+  const leftColor=t.done?"var(--secondary)":(od?"#E24A3F":"var(--dim)");
+  return `<tr>
+    <td>
+      <div class="row" style="gap:9px">
+        <div class="cbx ${t.done?"on":""}" onclick="taskToggle('${t.id}')">✓</div>
+        <div>
+          <div class="tt" style="${t.done?"text-decoration:line-through;color:var(--dim)":""}">${esc(t.title)}</div>
+          ${t.notes?`<div class="sub">${esc(t.notes)}</div>`:""}
+          ${(t.important||t.urgent)?`<div class="sub">${t.important?"★ Penting":""}${t.important&&t.urgent?" · ":""}${t.urgent?"⚡ Mendesak":""}</div>`:""}
+        </div>
+      </div>
+    </td>
+    <td class="num">${esc(taskDueLabel(t))}</td>
+    <td class="num">${t.time?esc(t.time):"-"}</td>
+    <td class="num" style="color:${leftColor};font-weight:700">${esc(left)}</td>
+    <td><span class="pill2" style="color:${pm.color};background:${hexA(pm.color,.14)}">${pm.label}</span></td>
+    <td><div class="rowacts"><button class="iconbtn" onclick="openTask('${t.id}')">✎</button><button class="iconbtn" onclick="deleteTask('${t.id}')">🗑</button></div></td>
+  </tr>`;
+}
+function setTodoFilter(v){todoFilter=v;render();}
+function setTodoSort(v){todoSort=v;render();}
+
+/* ---------------- planner: eisenhower matrix ---------------- */
+const QUADS=[
+  {id:1,no:"I",title:"Urgent & Penting",sub:"Kerjakan sekarang",color:"#E24A3F",important:1,urgent:1},
+  {id:2,no:"II",title:"Tidak Urgent & Penting",sub:"Jadwalkan dengan baik",color:"#00A88E",important:1,urgent:0},
+  {id:3,no:"III",title:"Urgent & Tidak Penting",sub:"Delegasikan kalau bisa",color:"#C98A00",important:0,urgent:1},
+  {id:4,no:"IV",title:"Tidak Urgent & Tidak Penting",sub:"Eliminasi atau tunda",color:"#8A8DA6",important:0,urgent:0},
+];
+function renderMatrix(){
+  const all=taskList();
+  const stats=QUADS.map(q=>`<div class="stat" style="border-left-color:${q.color}"><div class="k" style="display:flex;align-items:center;gap:6px"><span class="pdot" style="background:${q.color}"></span>${q.title}</div><div class="v" style="color:${q.color}">${all.filter(t=>quadrantOf(t)===q.id&&!t.done).length}</div></div>`).join("");
+  const quads=QUADS.map(q=>{
+    const list=all.filter(t=>quadrantOf(t)===q.id).sort((a,b)=>(Number(a.done)-Number(b.done))||prioRank[a.priority]-prioRank[b.priority]);
+    const body=list.length?list.map(t=>qcardHTML(t,q.color)).join(""):`<div class="qempty">Belum ada tugas di kuadran ini</div>`;
+    return `<div class="quad">
+      <div class="qhead">
+        <div class="qno" style="background:${hexA(q.color,.16)};color:${q.color}">${q.no}</div>
+        <div><div class="qtitle">${q.title}</div><div class="qsub">${q.sub}</div></div>
+        <button class="qadd" onclick="openTask(null,{important:${q.important},urgent:${q.urgent}})">+ Tambah</button>
+      </div>
+      <div class="qbody">${body}</div>
+    </div>`;
+  }).join("");
+  $("#stage").innerHTML=`
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em">Eisenhower Matrix</h1>
+    <div style="color:var(--dim);font-size:13px;margin:2px 0 14px">Tentukan prioritas: penting vs mendesak</div>
+    <div class="statgrid">${stats}</div>
+    <div class="quadgrid" style="margin-top:14px">${quads}</div>`;
+}
+function qcardHTML(t,color){
+  const pm=prioMeta(t.priority);
+  return `<div class="qcard ${t.done?"done":""}">
+    <div class="cbx ${t.done?"on":""}" style="width:22px;height:22px;border-radius:8px" onclick="taskToggle('${t.id}')">✓</div>
+    <div class="qgrow">
+      <div class="qt">${esc(t.title)}</div>
+      <div class="qm">${t.date?esc(taskDueLabel(t)):"tanpa tenggat"}${t.time?" · "+esc(t.time):""} · <span style="color:${pm.color}">${pm.label}</span></div>
+    </div>
+    <button class="iconbtn" onclick="openTask('${t.id}')">✎</button>
+  </div>`;
+}
+
+/* ---------------- task actions ---------------- */
+function taskToggle(id){const t=tasks.get(id);if(!t)return;send("task.put",{id:t.id,done:!t.done});}
+function deleteTask(id){send("task.delete",{id});}
+
+/* ---------------- task modal ---------------- */
+let tkPrio="low", tkImp=false, tkUrg=false;
+function openTask(id,defaults){
+  const t=id?tasks.get(id):null;
+  tkPrio=t?t.priority:"low";
+  tkImp=t?t.important:!!(defaults&&defaults.important);
+  tkUrg=t?t.urgent:!!(defaults&&defaults.urgent);
+  const defDate=t?t.date:(tab==="schedule"?key(planDay):key(today));
+  const defTime=t?t.time:"";
+  const defDur=t?t.duration:30;
+  $("#modalRoot").innerHTML=`
+  <div class="scrim" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h2>${t?"Edit task":"Task baru"}</h2>
+      <div class="stack">
+        <div class="field"><label class="lbl">Aktivitas</label><input id="t-title" value="${t?esc(t.title):""}" placeholder="Judul task..."></div>
+        <div class="field"><label class="lbl">Catatan</label><input id="t-notes" value="${t?esc(t.notes):""}" placeholder="Opsional"></div>
+        <div class="row">
+          <div class="field grow"><label class="lbl">Tanggal (deadline)</label><input id="t-date" type="date" value="${esc(defDate)}"></div>
+          <div class="field grow"><label class="lbl">Jam</label><select id="t-time">${timeOptions(defTime)}</select></div>
+        </div>
+        <div class="field"><label class="lbl">Durasi</label><select id="t-dur">${durOptions(defDur)}</select></div>
+        <div><label class="lbl">Prioritas</label><div class="chips" id="t-prio">
+          <button class="chip" data-v="low">Low</button>
+          <button class="chip" data-v="medium">Medium</button>
+          <button class="chip" data-v="urgent">Urgent</button>
+        </div></div>
+        <div><label class="lbl">Eisenhower</label><div class="chips" id="t-flags">
+          <button class="chip" data-f="important">★ Penting</button>
+          <button class="chip" data-f="urgent">⚡ Mendesak</button>
+        </div></div>
+      </div>
+      <div class="actions">
+        ${t?`<button class="btn" style="color:#DC4C4C" onclick="deleteTask('${t.id}');closeModal()">Hapus</button>`:""}
+        <span class="spacer"></span>
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn primary" onclick="saveTask('${t?t.id:""}')">Simpan</button>
+      </div>
+    </div>
+  </div>`;
+  $$("#t-prio .chip").forEach(b=>b.onclick=()=>{tkPrio=b.dataset.v;refreshTaskModal();});
+  $$("#t-flags .chip").forEach(b=>b.onclick=()=>{const f=b.dataset.f;if(f==="important")tkImp=!tkImp;else tkUrg=!tkUrg;refreshTaskModal();});
+  refreshTaskModal();
+  setTimeout(()=>{const el=$("#t-title");if(el)el.focus();},50);
+}
+function refreshTaskModal(){
+  $$("#t-prio .chip").forEach(b=>b.classList.toggle("on",b.dataset.v===tkPrio));
+  $$("#t-flags .chip").forEach(b=>b.classList.toggle("on",b.dataset.f==="important"?tkImp:tkUrg));
+}
+function saveTask(id){
+  const title=$("#t-title").value.trim();if(!title)return;
+  send("task.put",{id:id||uuid(),title,notes:$("#t-notes").value.trim(),date:$("#t-date").value,time:$("#t-time").value,duration:Number($("#t-dur").value)||0,priority:tkPrio,important:tkImp,urgent:tkUrg,done:id?tasks.get(id)?.done:false});
+  closeModal();
+}
+
+/* ---------------- pomodoro ---------------- */
+let pomoWork=25, pomoBreak=5;
+let pomoMode="work", pomoRemain=pomoWork*60, pomoRunning=false, pomoLast=0, pomoTicker=null;
+let pomoTaskId="";
+let pomoStats=JSON.parse(localStorage.getItem("pomo_"+key(today))||"null")||{sessions:0,minutes:0};
+let pomoSessions=pomoStats.sessions||0, pomoFocusMin=pomoStats.minutes||0;
+
+function pomoTotalSeconds(){return (pomoMode==="work"?pomoWork:pomoBreak)*60;}
+function savePomoStats(){try{localStorage.setItem("pomo_"+key(today),JSON.stringify({sessions:pomoSessions,minutes:pomoFocusMin}));}catch(e){}}
+function ensurePomoTicker(){if(!pomoTicker)pomoTicker=setInterval(pomoTick,500);}
+function pomoToggle(){
+  pomoRunning=!pomoRunning;
+  if(pomoRunning){pomoLast=Date.now();ensurePomoTicker();}
+  render();
+}
+function pomoReset(){pomoRunning=false;pomoRemain=pomoTotalSeconds();render();}
+function pomoSkip(){pomoRunning=false;pomoMode=pomoMode==="work"?"break":"work";pomoRemain=pomoTotalSeconds();render();}
+function setPomoMode(m){
+  if(m===pomoMode)return;
+  pomoMode=m;pomoRunning=false;pomoRemain=pomoTotalSeconds();render();
+}
+function setPomoWork(v){pomoWork=Number(v)||25;if(pomoMode==="work"&&!pomoRunning)pomoRemain=pomoWork*60;render();}
+function setPomoBreak(v){pomoBreak=Number(v)||5;if(pomoMode==="break"&&!pomoRunning)pomoRemain=pomoBreak*60;render();}
+function setPomoTask(id){pomoTaskId=id;render();}
+function pomoTick(){
+  if(pomoRunning){
+    const now=Date.now(),dt=(now-pomoLast)/1000;pomoLast=now;
+    pomoRemain=Math.max(0,pomoRemain-dt);
+    if(pomoRemain<=0){pomoComplete();return;}
+  }
+  if(tab==="pomodoro")render();
+  if(!pomoRunning&&pomoTicker){clearInterval(pomoTicker);pomoTicker=null;if(tab==="pomodoro")render();}
+}
+function pomoComplete(){
+  pomoRunning=false;
+  if(pomoMode==="work"){
+    pomoSessions++;pomoFocusMin+=pomoWork;savePomoStats();
+    if(pomoTaskId){const t=tasks.get(pomoTaskId);if(t&&!t.done)send("task.put",{id:t.id,done:true});}
+    pomoMode="break";
+  }else{
+    pomoMode="work";
+  }
+  pomoRemain=pomoTotalSeconds();
+  pomoChime();
+  render();
+}
+function pomoChime(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    const ctx=new AC(),o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);o.type="sine";o.frequency.value=880;
+    g.gain.setValueAtTime(.001,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.25,ctx.currentTime+.02);
+    g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.9);
+    o.start();o.stop(ctx.currentTime+.95);
+    setTimeout(()=>{try{ctx.close();}catch(e){}},1200);
+  }catch(e){}
+}
+function pomoChoiceOptions(list,sel){return list.map(v=>`<option value="${v}" ${Number(sel)===v?"selected":""}>${v} menit</option>`).join("");}
+function renderPomodoro(){
+  const total=pomoTotalSeconds();
+  const p=total?clamp((total-pomoRemain)/total):0;
+  const accent=pomoMode==="work"?"#E24A3F":"#00A88E";
+  const label=pomoMode==="work"?"Fokus":"Istirahat";
+  const list=tasksOn(key(today));
+  const btnLabel=pomoRunning?"Jeda":(pomoRemain<total?"Lanjut":"Mulai");
+  $("#stage").innerHTML=`
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em">Pomodoro</h1>
+    <div style="color:var(--dim);font-size:13px;margin:2px 0 14px">Fokus terarah dengan siklus kerja & istirahat</div>
+    <div class="card" style="text-align:center">
+      <div class="chips" style="justify-content:center">
+        <button class="chip ${pomoMode==="work"?"on":""}" onclick="setPomoMode('work')">Fokus</button>
+        <button class="chip ${pomoMode==="break"?"on":""}" onclick="setPomoMode('break')">Istirahat</button>
+      </div>
+      <div style="display:flex;justify-content:center;margin:18px 0 4px">
+        ${ring(p,218,14,accent,`<div class="timerclock" style="color:${accent};font-size:42px">${fmtClock(pomoRemain)}</div><div style="color:var(--dim);font-size:12px;font-weight:700;margin-top:4px">${label}</div>`)}
+      </div>
+      <div class="row" style="justify-content:center;margin-top:14px">
+        <button class="btn primary" onclick="pomoToggle()">${btnLabel}</button>
+        <button class="btn" onclick="pomoReset()">Reset</button>
+        <button class="btn" onclick="pomoSkip()">Lewati</button>
+      </div>
+    </div>
+    <div class="statgrid" style="margin-top:14px">
+      <div class="stat" style="border-left-color:${accent}"><div class="k">Sesi selesai hari ini</div><div class="v" style="color:${accent}">${pomoSessions}</div></div>
+      <div class="stat" style="border-left-color:var(--primary)"><div class="k">Total waktu fokus</div><div class="v" style="color:var(--primary)">${pomoFocusMin} menit</div></div>
+    </div>
+    <div class="section"><span class="bullet"></span>Pengaturan</div>
+    <div class="card stack">
+      <div class="row">
+        <div class="field grow"><label class="lbl">Durasi fokus (menit)</label><select onchange="setPomoWork(this.value)">${pomoChoiceOptions([15,20,25,30,45,50],pomoWork)}</select></div>
+        <div class="field grow"><label class="lbl">Durasi istirahat (menit)</label><select onchange="setPomoBreak(this.value)">${pomoChoiceOptions([5,10,15,20],pomoBreak)}</select></div>
+      </div>
+      <div class="field"><label class="lbl">Fokus untuk task hari ini (opsional)</label>
+        <select onchange="setPomoTask(this.value)">
+          <option value="">Tanpa task</option>
+          ${list.map(t=>`<option value="${t.id}" ${pomoTaskId===t.id?"selected":""}>${esc(t.title)}${t.done?" (selesai)":""}</option>`).join("")}
+        </select>
+      </div>
+      ${list.length?"":`<div style="font-size:12px;color:var(--dim)">Belum ada task hari ini. Tambahkan lewat tab Jadwal atau To Do.</div>`}
+      <div class="tipcard">Selesaikan satu sesi fokus untuk menaikkan hitungan. Bila task dipilih, ia otomatis ditandai selesai setelah sesi fokus berakhir.</div>
+    </div>`;
+}
+
+function renderCalendar(){
+  const grid=monthGrid(month.getFullYear(),month.getMonth());
+  const cells=grid.map(d=>{
+    const inMonth=d.getMonth()===month.getMonth(),r=dayRatio(d),isSel=key(d)===key(selected),isToday=key(d)===key(today);
+    const tone=habitColor(DAY_INIT[iso(d)-1]+iso(d));
+    const dot=r===null?"transparent":(r<=0?"var(--surface-2)":hexA(tone,.45+.55*r));
+    return `<div class="cell ${inMonth?"":"out"} ${isSel?"sel":""} ${isToday&&!isSel?"today":""}" onclick="selectDay('${key(d)}')"><span class="n">${d.getDate()}</span><span class="bdot" style="background:${dot}"></span></div>`;
+  }).join("");
+  let due=0,done=0;grid.filter(d=>d.getMonth()===month.getMonth()).forEach(d=>{const r=dayRatio(d);if(r!==null){due++;if(r>0)done++;}});
+  const ratio=dayRatio(selected);
+
+  const ws0=weekStart(selected);
+  const weekRings=[...Array(7)].map((_,i)=>{
+    const d=new Date(ws0);d.setDate(ws0.getDate()+i);const r=dayRatio(d),isSel=key(d)===key(selected);
+    const tone=habitColor(DAY_INIT[iso(d)-1]+iso(d));
+    const col=isSel?"var(--primary)":tone;
+    return `<div onclick="selectDay('${key(d)}')">${ring(r||0,46,5,col,`<span style="font-size:12px;color:var(--txt);font-weight:${isSel?700:400}">${d.getDate()}</span>`)}<div class="lbl" style="color:${isSel?"var(--primary)":"var(--dim)"}">${DAY_INIT[iso(d)-1]}</div></div>`;
+  }).join("");
+
+  const cur=weekStart(today);
+  const weeks=[...Array(6)].map((_,i)=>{const s=new Date(cur);s.setDate(cur.getDate()-7*(5-i));return{s,r:weekRatio(s)};});
+  const ts=Math.max(0,...activeHabits().map(h=>dailyStreak(h).longest));
+  const bars=weeks.map(({s,r})=>`<div class="col"><div class="sp"><div class="b" style="height:${Math.max(6,r*100)}%;background:${r>0?progressColor(r):"var(--surface-2)"}"></div></div><div class="bl">${s.getDate()}</div></div>`).join("");
+
+  const dayList=listFor(selected);
+  const dayCards=dayList.length?dayList.map(h=>habitCardHTML(h,selected)).join(""):`<div class="empty" style="grid-column:1/-1">Tidak ada habit terjadwal.</div>`;
+
+  $("#stage").innerHTML=`
+    <div class="cal-layout">
+      <div class="stack">
+        <div class="card">
+          <div class="row">
+            <div class="grow" style="font-size:17px;font-weight:800;text-transform:capitalize">${MONTHS[month.getMonth()]} ${month.getFullYear()}</div>
+            <button class="btn" onclick="goToday()">Hari ini</button>
+            <button class="menu" onclick="shiftMonth(-1)">‹</button>
+            <button class="menu" onclick="shiftMonth(1)">›</button>
+          </div>
+          <div class="wd">${DAY_INIT.map((d,i)=>`<span style="color:${PALETTE[i%PALETTE.length]}">${d}</span>`).join("")}</div>
+          <div class="cal">${cells}</div>
+          <div class="legend">Rendah ${HEAT.map(c=>`<i style="background:${c}"></i>`).join("")} Tinggi</div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="statgrid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat" style="border-left-color:var(--secondary)"><div class="k">Minggu ini</div><div class="v" style="color:var(--secondary)">${Math.round((weekRatio(weekStart(today))||0)*100)}%</div></div>
+          <div class="stat" style="border-left-color:var(--primary)"><div class="k">Terpilih</div><div class="v" style="color:var(--primary)">${ratio===null?"-":Math.round(ratio*100)+"%"}</div></div>
+          <div class="stat" style="border-left-color:var(--tertiary)"><div class="k">Hari selesai</div><div class="v" style="color:var(--tertiary)">${done}</div></div>
+        </div>
+        <div class="section"><span class="bullet"></span>Performa minggu ini</div>
+        <div class="card"><div class="week">${weekRings}</div></div>
+        <div class="section"><span class="bullet"></span>Tren 6 minggu</div>
+        <div class="card">
+          <div class="row"><span style="color:var(--dim)">Rekor terpanjang</span><span class="spacer"></span><span style="font-weight:800;color:var(--tertiary)">${ts} hari</span></div>
+          <div class="bars">${bars}</div>
+        </div>
+      </div>
+    </div>
+    <div class="section"><span class="bullet"></span>Habit · ${selected.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long"})}</div>
+    <div class="cards">${dayCards}</div>`;
+}
+
+function renderStats(){
+  const habits=[...activeHabits(),...archivedHabits()];
+  let done=0;const counts={};
+  [...checkins.values()].forEach(c=>{const h=habits.find(x=>x.id===c.habitId);if(h&&isComplete(h,c)){done++;counts[c.date]=(counts[c.date]||0)+1;}});
+  const monthDone=[...checkins.values()].filter(c=>{const h=habits.find(x=>x.id===c.habitId);return h&&isComplete(h,c)&&new Date(c.date).getMonth()===today.getMonth();}).length;
+  const trend=[...Array(14)].map((_,i)=>{const d=new Date(today);d.setDate(today.getDate()-(13-i));return dayRatio(d)||0;});
+  const maxCount=Math.max(1,...Object.values(counts));
+
+  const bars=trend.map((v,i)=>{const c=PALETTE[i%PALETTE.length];return `<div class="col" title="${Math.round(v*100)}%"><div class="sp"><div class="b" style="height:${Math.max(4,v*100)}%;background:${v>0?c:"var(--surface-2)"}"></div></div></div>`;}).join("");
+
+  const cellHTML=heatmapCells(counts,maxCount);
+
+  const perHabit=habits.map(h=>{
+    const accent=habitColor(h.category||h.name);
+    const st=dailyStreak(h);
+    const checks=[...checkins.values()].filter(c=>c.habitId===h.id);
+    const rate=habitRate(h,checks);
+    return `<div class="hcard"><div class="bar" style="background:${accent}"></div>
+      <div class="row">
+        <div class="tile" style="background:${hexA(accent,.16)};color:${accent}">${esc(h.name.trim().slice(0,1).toUpperCase())}</div>
+        <div class="grow">
+          <div class="hname">${esc(h.name)}</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:3px">Streak ${st.cur} · Rekor ${st.longest} · 30 hari</div>
+        </div>
+        ${ring(rate,48,5,accent,`<span style="color:${accent};font-size:12px;font-weight:700">${Math.round(rate*100)}</span>`)}
+      </div>
+    </div>`;
+  }).join("")||`<div class="empty" style="grid-column:1/-1">Belum ada habit.</div>`;
+
+  $("#stage").innerHTML=`
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em">Statistik</h1>
+    <div style="color:var(--dim);font-size:13px;margin:2px 0 14px">Ringkasan kebiasaanmu</div>
+    <div class="statgrid">
+      <div class="stat" style="border-left-color:var(--secondary)"><div class="k">Total selesai</div><div class="v" style="color:var(--secondary)">${done}</div></div>
+      <div class="stat" style="border-left-color:var(--primary)"><div class="k">Bulan ini</div><div class="v" style="color:var(--primary)">${monthDone}</div></div>
+      <div class="stat" style="border-left-color:var(--tertiary)"><div class="k">Habit</div><div class="v" style="color:var(--tertiary)">${activeHabits().length}</div></div>
+      <div class="stat" style="border-left-color:#7B4DFF"><div class="k">Terarsip</div><div class="v" style="color:#7B4DFF">${archivedHabits().length}</div></div>
+    </div>
+    <div class="section"><span class="bullet"></span>Tren 14 hari</div>
+    <div class="card"><div class="bars" style="height:120px">${bars}</div></div>
+    <div class="section"><span class="bullet"></span>Heatmap kalender</div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600">Aktivitas 20 minggu</div>
+      <div class="heat" style="margin-top:12px">${cellHTML}</div>
+      <div class="legend">Sedikit ${HEAT.map(c=>`<i style="background:${c}"></i>`).join("")} Banyak</div>
+    </div>
+    <div class="section"><span class="bullet"></span>Per habit</div>
+    <div class="cards">${perHabit}</div>`;
+}
+
+function habitRate(h,checks){
+  const from=new Date(today);from.setDate(today.getDate()-29);
+  const completed=new Set(checks.filter(c=>isComplete(h,c)).map(c=>c.date));
+  let due=0,done=0;
+  for(let d=new Date(from);d<=today;d.setDate(d.getDate()+1)){if(isScheduled(h,d)){due++;if(completed.has(key(d)))done++;}}
+  return due?done/due:0;
+}
+function heatmapCells(counts,maxCount){
+  const end=new Date(today);end.setDate(today.getDate()+(7-iso(today))%7);
+  const weeks=20;const start=new Date(end);start.setDate(end.getDate()-(weeks*7-1));
+  let html="";
+  for(let i=0;i<weeks*7;i++){const d=new Date(start);d.setDate(start.getDate()+i);const n=counts[key(d)]||0;const level=n?Math.min(1,.35+.65*(n/maxCount)):0;const col=n?heatColor(level):"";html+=`<i style="${col?`background:${col}`:""}"></i>`;}
+  return html;
+}
+
+function renderSettings(){
+  const arch=archivedHabits();
+  const archRows=arch.length?arch.map(h=>{const accent=habitColor(h.category||h.name);return `<div class="hcard"><div class="bar" style="background:${accent}"></div><div class="row"><div class="tile" style="background:${hexA(accent,.16)};color:${accent}">${esc(h.name.trim().slice(0,1).toUpperCase())}</div><div class="grow hname">${esc(h.name)}</div><button class="btn" onclick="unarchive('${h.id}')">Aktifkan</button><button class="btn" style="color:#DC4C4C" onclick="deleteArchived('${h.id}')">Hapus</button></div></div>`;}).join(""):`<div class="empty">Belum ada habit diarsipkan.</div>`;
+  $("#stage").innerHTML=`
+    <h1 style="font-size:24px;font-weight:800;letter-spacing:-.02em">Pengaturan</h1>
+    <div style="color:var(--dim);font-size:13px;margin:2px 0 14px">Sinkronisasi & arsip</div>
+    <div class="card stack">
+      <div style="font-weight:700">Sinkronisasi server (WebSocket)</div>
+      <div class="field"><label class="lbl">Alamat server</label><input id="srv" value="${location.host}" disabled></div>
+      <div class="row">
+        <button class="btn primary" onclick="reconnect()">Sambung ulang</button>
+        <button class="btn" onclick="send('sync.pull',{since:0})">Sinkron</button>
+      </div>
+      <div class="row" style="font-size:13px;color:var(--dim)"><span class="conn ${connClass()}" style="border:0;background:transparent;padding:0"><span class="dot"></span></span> Status: ${connText()}</div>
+    </div>
+    <div class="section"><span class="bullet"></span>Arsip</div>
+    <div class="cards">${archRows}</div>
+    <div class="section"><span class="bullet"></span>API (untuk integrasi/agent)</div>
+    <div class="card stack">
+      <div style="font-weight:700">REST API</div>
+      <div style="font-size:13px;color:var(--dim)">Akses & ubah jadwal, task, check-in lewat HTTP dengan token di bawah sebagai <b>Authorization: Bearer &lt;token&gt;</b>.</div>
+      <div class="field"><label class="lbl">Base URL</label><input id="apiBase" value="${location.origin}/api" readonly onclick="this.select()"></div>
+      <div class="field"><label class="lbl">Token</label><input id="apiToken" value="${esc(token||"")}" readonly onclick="this.select()"></div>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <button class="btn" onclick="copyText($('#apiBase').value,'Base URL disalin')">Salin Base URL</button>
+        <button class="btn primary" onclick="copyText($('#apiToken').value,'Token disalin')">Salin Token</button>
+        <a class="btn" href="/api/openapi.json" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Buka OpenAPI</a>
+      </div>
+      ${token?`<div class="tipcard">Token ini terikat ke akunmu. Simpan baik-baik; siapa pun yang memegangnya dapat membaca & mengubah datamu.</div>`:`<div class="tipcard">Token belum tersedia. Pastikan sudah tersambung ke server.</div>`}
+    </div>`;
+}
+function copyText(text,msg){
+  if(!text)return;
+  const done=()=>flash(msg||"Disalin");
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}
+  else fallbackCopy(text,done);
+}
+function fallbackCopy(text,done){const t=document.createElement("textarea");t.value=text;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(t);done();}
+function flash(msg){const el=document.createElement("div");el.textContent=msg;el.style.cssText="position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:80;background:var(--primary);color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow)";document.body.appendChild(el);setTimeout(()=>el.remove(),1600);}
+function connClass(){return $("#conn").className.replace("conn ","");}
+function connText(){return $("#connText").textContent;}
+
+/* ---------------- interactions ---------------- */
+function selectDay(k){selected=new Date(k);month=new Date(selected.getFullYear(),selected.getMonth(),1);tab="calendar";render();}
+function shiftMonth(n){month=new Date(month.getFullYear(),month.getMonth()+n,1);render();}
+function goToday(){today=new Date();today.setHours(0,0,0,0);selected=new Date(today);month=new Date(today.getFullYear(),today.getMonth(),1);render();}
+function onTap(id,k){const h=habits.get(id);if(h)tap(h,new Date(k));}
+function reconnect(){reconnectDelay=1000;connect();}
+function unarchive(id){const h=habits.get(id);if(h)archiveHabit(h,false);}
+function deleteArchived(id){if(confirm("Hapus habit ini secara permanen? Tindakan ini tidak bisa dibatalkan."))send("habit.delete",{id});}
+
+$$("#bottomNav button, .rail button").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+$("#fab").onclick=()=>{ if(tab==="today")openEdit(null); else openTask(null); };
+const userField=$("#userName");
+if(userField){userField.value=userName();userField.oninput=()=>{try{localStorage.setItem("habit_name",userField.value);}catch(e){}if(tab==="today")renderToday();};}
+window.addEventListener("online",()=>{reconnectDelay=1000;connect();});
+window.addEventListener("offline",()=>setConn("offline","Offline"));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&(!ws||ws.readyState>1)){reconnectDelay=1000;connect();}});
+
+/* ---------------- habit modal ---------------- */
+let editSchedule="daily", editTarget="check", editDays=new Set();
+function openEdit(id){
+  const h=id?habits.get(id):null;
+  editSchedule=h?h.scheduleType:"daily"; editTarget=h?h.targetType:"check";
+  editDays=new Set(dayList(h?h.scheduleDays:""));
+  $("#modalRoot").innerHTML=`
+  <div class="scrim" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h2>${h?"Edit habit":"Habit baru"}</h2>
+      <div class="stack">
+        <div class="field"><label class="lbl">Nama</label><input id="m-name" value="${h?esc(h.name):""}"></div>
+        <div class="field"><label class="lbl">Kategori</label><input id="m-cat" value="${h?esc(h.category):""}"></div>
+        <div><label class="lbl">Jadwal</label><div class="chips" id="m-sched">
+          <button class="chip" data-v="daily">Harian</button>
+          <button class="chip" data-v="weekdays">Hari tertentu</button>
+          <button class="chip" data-v="weekly">N/minggu</button>
+        </div></div>
+        <div id="m-daysWrap">
+          <label class="lbl">Pilih hari</label>
+          <div class="chips" id="m-days">
+            <button class="chip" data-d="1">Sen</button>
+            <button class="chip" data-d="2">Sel</button>
+            <button class="chip" data-d="3">Rab</button>
+            <button class="chip" data-d="4">Kam</button>
+            <button class="chip" data-d="5">Jum</button>
+            <button class="chip" data-d="6">Sab</button>
+            <button class="chip" data-d="7">Min</button>
+          </div>
+        </div>
+        <div class="field" id="m-weekWrap"><label class="lbl">Target per minggu (N)</label><input id="m-week" type="number" min="1" max="7" value="${h&&h.timesPerWeek?h.timesPerWeek:3}"></div>
+        <div><label class="lbl">Tipe target</label><div class="chips" id="m-target">
+          <button class="chip" data-v="check">Centang</button>
+          <button class="chip" data-v="numeric">Numerik</button>
+          <button class="chip" data-v="timer">Timer</button>
+        </div></div>
+        <div class="row" id="m-valueWrap">
+          <div class="field grow"><label class="lbl" id="m-valueLabel">Nilai target</label><input id="m-value" type="number" min="0" step="0.5" value="${h&&h.targetValue?(h.targetType==="timer"?h.targetValue/60:h.targetValue):0}"></div>
+          <div class="field grow" id="m-unitWrap"><label class="lbl">Satuan</label><input id="m-unit" value="${h?esc(h.unit):""}"></div>
+        </div>
+      </div>
+      <div class="actions">
+        ${h?`<button class="btn" style="color:#DC4C4C" onclick="doDelete('${h.id}')">Hapus</button>`:""}
+        <span class="spacer"></span>
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn primary" onclick="doSave('${h?h.id:""}')">Simpan</button>
+      </div>
+    </div>
+  </div>`;
+  $$("#m-sched .chip").forEach(b=>{b.classList.toggle("on",b.dataset.v===editSchedule);b.onclick=()=>{editSchedule=b.dataset.v;refreshModal();};});
+  $$("#m-target .chip").forEach(b=>{b.classList.toggle("on",b.dataset.v===editTarget);b.onclick=()=>{editTarget=b.dataset.v;refreshModal();};});
+  $$("#m-days .chip").forEach(b=>{b.onclick=()=>{const n=Number(b.dataset.d);if(editDays.has(n))editDays.delete(n);else editDays.add(n);if(editSchedule==="weekly"&&editDays.size)$("#m-week").value=String(editDays.size);refreshModal();};});
+  refreshModal();
+}
+function refreshModal(){
+  $$("#m-sched .chip").forEach(b=>b.classList.toggle("on",b.dataset.v===editSchedule));
+  $$("#m-target .chip").forEach(b=>b.classList.toggle("on",b.dataset.v===editTarget));
+  $$("#m-days .chip").forEach(b=>b.classList.toggle("on",editDays.has(Number(b.dataset.d))));
+  $("#m-daysWrap").classList.toggle("hidden",editSchedule==="daily");
+  $("#m-weekWrap").classList.toggle("hidden",editSchedule!=="weekly");
+  $("#m-valueWrap").classList.toggle("hidden",editTarget==="check");
+  $("#m-unitWrap").classList.toggle("hidden",editTarget!=="numeric");
+  $("#m-valueLabel").textContent=editTarget==="timer"?"Menit":editTarget==="numeric"?"Nilai target":"Nilai target";
+}
+function closeModal(){$("#modalRoot").innerHTML="";}
+function doSave(id){
+  const name=$("#m-name").value.trim();if(!name)return;
+  let days=[...editDays].sort((a,b)=>a-b);
+  if(editSchedule==="weekdays"&&!days.length)days=[1,2,3,4,5];
+  let tv=parseFloat($("#m-value").value)||0;if(editTarget==="timer")tv*=60;
+  let n=0;
+  if(editSchedule==="weekly"){n=parseInt($("#m-week").value,10)||0;if(days.length)n=days.length;}
+  send("habit.put",{id:id||uuid(),name,category:$("#m-cat").value.trim(),scheduleType:editSchedule,
+    scheduleDays:editSchedule==="daily"?"":days.join(","),timesPerWeek:n,targetType:editTarget,
+    targetValue:editTarget==="check"?0:tv,unit:editTarget==="numeric"?$("#m-unit").value.trim():"",archived:false});
+  closeModal();
+}
+function doDelete(id){if(habits.get(id))removeHabit(habits.get(id));closeModal();}
+
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+connect();
+</script>
+</body>
+</html>
